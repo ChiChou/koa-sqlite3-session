@@ -1,0 +1,24 @@
+{
+  "name": "koa-sqlite3-session",
+  "version": "1.0.0",
+  "description": "sqlite3 adaption for koa-generic-session",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ChiChou/koa-sqlite3-session.git"
+  },
+  "keywords": [
+    "sqlite3",
+    "koa",
+    "session"
+  ],
+  "author": "CodeColorist",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChiChou/koa-sqlite3-session/issues"
+  },
+  "homepage": "https://github.com/ChiChou/koa-sqlite3-session#readme"
+}
