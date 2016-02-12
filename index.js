@@ -1,6 +1,7 @@
 'use strict';
 
 const sqlite3 = require('sqlite3');
+const debug = require('debug')('koa-sqlite3-session');
 
 const TABLE_NAME = '__session_store';
 const SQL_CREATE_TABLE = `CREATE TABLE IF NOT EXISTS "${TABLE_NAME}" (
@@ -17,18 +18,27 @@ const SQL_EXPIRE = `DELETE FROM "${TABLE_NAME}" WHERE expires < ?`;
 /**
  * expire
  * @param  {Session} session koa session
- * @param  {Number}  ttl     time to live, in millseconds
+ * @param  {Number}  ttl     time-to-live in seconds
  * @return {Date}            date to expire
  */
 function expireDate(session, ttl) {
-  if (session && session.cookie && session.cookie.expires)
-    return session.cookie.expires instanceof Date ?
-      session.cookie.expires :
-      new Date(session.cookie.expires);
+  let expire;
+  if (session && session.cookie && session.cookie.expires) {
+    ttl = 0;
+    let date = session.cookie.expires;
+    if (!(date instanceof Date)) {
+      expire = new Date(session.cookie.expires);
+    }
+  } else {
+    expire = new Date();
 
-  else
-    return new Date(new Date().getTime() + ttl || 60 * 60 * 1000);
+    // half an hour by default
+    if (isNaN(ttl))
+      ttl = 30 * 60;
+  }
+  return Math.ceil(expire.getTime() / 1000 + ttl);
 };
+
 
 class SQLiteStore {
   /**
@@ -46,8 +56,10 @@ class SQLiteStore {
       if (err) throw err;
 
       this.__ready = true;
-      this.__pending.forEach(task =>
-        this.__db.get(task.sql, task.params, task.callback));
+      this.__db.run(SQL_CREATE_TABLE, [], err => {
+        this.__pending.forEach(task =>
+          this.__db.get(task.sql, task.params, task.callback));
+      });
     });
 
     setInterval(this.cleanup.bind(this), 15 * 60 * 1000);
@@ -58,44 +70,51 @@ class SQLiteStore {
    * @param  {String}  sid   session id
    * @return {Promise} async task
    */
-  * get(sid) {
-    let result = yield this.__query(SQL_GET, [sid]);
-    let now = new Date().valueOf();
-    
-    if (result) 
-      if (result.expires > now)
-        return JSON.parse(result.data);
-      else
+  get(sid) {
+    let now = Math.ceil(new Date().getTime() / 1000);
+
+    return new Promise((resolve, reject) => {
+      this.__query(SQL_GET, [sid]).then(result => {
+        if (!result)
+          return resolve(result);
+
+        if (result.expires > now)
+          return resolve(JSON.parse(result.data));
+      
         this.destroy(sid);
+        resolve();
+      });
+    });
+
   }
 
   /**
    * session start
    * @param {String} sid     session id
    * @param {Object} session session data
-   * @param {Number} ttl     time to live, in millseconds
+   * @param {Number} ttl     time-to-live in seconds
    */
-  * set(sid, session, ttl) {
+  set(sid, session, ttl) {
     let data = JSON.stringify(session);
-    let expires = expireDate(session, ttl).valueOf();
-    return yield this.__query(SQL_SET, [sid, expires, data]);
+    let expires = expireDate(session, ttl).getTime();
+    return this.__query(SQL_SET, [sid, expires, data]);
   }
 
   /**
    * destroy session
    * @return {Promise} async task
    */
-  * destroy(sid) {
-    return yield this.__query(SQL_DELETE, [sid]);
+  destroy(sid) {
+    return this.__query(SQL_DELETE, [sid]);
   }
 
   /**
    * clean up exired sessions
    * @return {Promise} 
    */
-  * cleanup() {
+  cleanup() {
     let now = new Date().valueOf();
-    return yield this.__query(SQL_EXPIRE, [now]);
+    return this.__query(SQL_EXPIRE, [now]);
   }
 
   /**
@@ -110,7 +129,11 @@ class SQLiteStore {
       if (self.__ready)
         self.__db.get(sql, params, done);
       else
-        self.__pending.push({sql: sql, params: params, callback: done});
+        self.__pending.push({
+          sql: sql,
+          params: params,
+          callback: done
+        });
 
     });
   }
