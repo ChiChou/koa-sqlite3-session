@@ -30,7 +30,7 @@ function expireDate(session, ttl) {
     return new Date(new Date().getTime() + ttl || 60 * 60 * 1000);
 };
 
-class SQliteStore {
+class SQLiteStore {
   /**
    * initialize a new SQLiteStore instance
    * @param  {String} filename sqlite database filename, could be ':memory:'
@@ -115,4 +115,4 @@ class SQliteStore {
   }
 }
 
-module.exports = SQliteStore;
+module.exports = SQLiteStore;
