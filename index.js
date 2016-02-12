@@ -14,7 +14,13 @@ const SQL_DELETE = `DELETE FROM "${TABLE_NAME}" WHERE id = ?`;
 const SQL_EXPIRE = `DELETE FROM "${TABLE_NAME}" WHERE expires < ?`;
 
 
-let expireDate = function(session, ttl) {
+/**
+ * expire
+ * @param  {Session} session koa session
+ * @param  {Number}  ttl     time to live, in millseconds
+ * @return {Date}            date to expire
+ */
+function expireDate(session, ttl) {
   if (session && session.cookie && session.cookie.expires)
     return session.cookie.expires instanceof Date ?
       session.cookie.expires :
@@ -41,7 +47,7 @@ class SQliteStore {
 
       this.__ready = true;
       this.__pending.forEach(task =>
-        this.__db.get(task.sql, task.param, task.callback));
+        this.__db.get(task.sql, task.params, task.callback));
     });
 
     setInterval(this.refresh.bind(this), 15 * 60 * 1000);
@@ -49,13 +55,17 @@ class SQliteStore {
 
   /**
    * load session by sid
-   * @param  {String} sid    session id
+   * @param  {String}  sid   session id
    * @return {Promise} async task
    */
-  get(sid) {
-    return new Promise((resolve, reject) => {
+  * get(sid) {
+    let result = yield this.__query(SQL_GET, [sid]);
 
-    });
+    if (results && results[0] && results[0][0] && results[0][0].data) {
+      session = JSON.parse(results[0][0].data);
+    }
+
+    return session;
   }
 
   /**
@@ -64,22 +74,44 @@ class SQliteStore {
    * @param {Object} session session data
    * @param {Number} ttl     time to live, in millseconds
    */
-  set(sid, session, ttl) {
+  * set(sid, session, ttl) {
     let data = JSON.stringify(session);
-
-    return new Promise((resolve, reject) => {
-
-    })
+    let expires = expireDate(session, ttl).valueOf();
+    return yield this.__query(SQL_SET, [sid, expires, data]);
   }
 
   /**
    * destroy session
    * @return {Promise} async task
    */
-  destroy() {
-    return new Promise((resolve, reject) => {
+  * destroy(sid) {
+    return yield this.__query(SQL_DELETE, [sid]);
+  }
 
-    })
+  /**
+   * clean up exired sessions
+   * @return {Promise} 
+   */
+  * cleanup() {
+    let now = new Date().valueOf();
+    return yield this.__query(SQL_EXPIRE, [now]);
+  }
+
+  /**
+   * run query
+   * @return {Promise} query task
+   */
+  __query(sql, params) {
+    const self = this;
+    return new Promise((resolve, reject) => {
+      const done = (err, row) => (err ? reject : resolve)(row);
+
+      if (self.__ready)
+        self.__db.get(sql, params, done);
+      else
+        self.__pending.push({sql: sql, params: params, callback: done});
+      
+    });
   }
 }
 
