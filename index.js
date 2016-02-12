@@ -8,7 +8,7 @@ const SQL_CREATE_TABLE = `CREATE TABLE IF NOT EXISTS "${TABLE_NAME}" (
                     expires INTEGER NOT NULL,
                     data TEXT);`;
 
-const SQL_GET = `SELECT * FROM "${TABLE_NAME}" WHERE ID = ?`;
+const SQL_GET = `SELECT * FROM "${TABLE_NAME}" WHERE id = ?`;
 const SQL_SET = `INSERT OR REPLACE INTO "${TABLE_NAME}" (id, expires, data) VALUES (?, ?, ?)`;
 const SQL_DELETE = `DELETE FROM "${TABLE_NAME}" WHERE id = ?`;
 const SQL_EXPIRE = `DELETE FROM "${TABLE_NAME}" WHERE expires < ?`;
@@ -50,7 +50,7 @@ class SQLiteStore {
         this.__db.get(task.sql, task.params, task.callback));
     });
 
-    setInterval(this.refresh.bind(this), 15 * 60 * 1000);
+    setInterval(this.cleanup.bind(this), 15 * 60 * 1000);
   }
 
   /**
@@ -60,12 +60,13 @@ class SQLiteStore {
    */
   * get(sid) {
     let result = yield this.__query(SQL_GET, [sid]);
-
-    if (results && results[0] && results[0][0] && results[0][0].data) {
-      session = JSON.parse(results[0][0].data);
-    }
-
-    return session;
+    let now = new Date().valueOf();
+    
+    if (result) 
+      if (result.expires > now)
+        return JSON.parse(result.data);
+      else
+        this.destroy(sid);
   }
 
   /**
@@ -110,7 +111,7 @@ class SQLiteStore {
         self.__db.get(sql, params, done);
       else
         self.__pending.push({sql: sql, params: params, callback: done});
-      
+
     });
   }
 }
