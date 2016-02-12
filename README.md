@@ -1,5 +1,7 @@
 # koa-sqlite3-session
 
+[![Build Status](https://travis-ci.org/ChiChou/koa-sqlite3-session.svg?branch=master)](https://travis-ci.org/ChiChou/koa-sqlite3-session) [![Coverage Status](https://coveralls.io/repos/github/ChiChou/koa-sqlite3-session/badge.svg?branch=master)](https://coveralls.io/github/ChiChou/koa-sqlite3-session?branch=master) [![npm version](https://badge.fury.io/js/koa-sqlite3-session.svg)](https://badge.fury.io/js/koa-sqlite3-session) [![License](https://img.shields.io/npm/l/koa-sqlite3-session.svg?style=flat-square)](https://github.com/chichou/koa-sqlite3-session/blob/master/LICENSE)
+
 ## Usage
 
 `koa-sqlite3-session` works with [koa-generic-session](https://github.com/koajs/generic-session) (a generic session middleware for koa).

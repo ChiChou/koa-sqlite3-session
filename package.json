@@ -1,6 +1,6 @@
 {
   "name": "koa-sqlite3-session",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "sqlite3 adaption for koa-generic-session",
   "main": "index.js",
   "scripts": {
