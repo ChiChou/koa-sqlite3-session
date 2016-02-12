@@ -4,7 +4,9 @@
   "description": "sqlite3 adaption for koa-generic-session",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "_mocha",
+    "coverage": "istanbul cover _mocha -- -R spec",
+    "cov": "npm run coverage"
   },
   "repository": {
     "type": "git",
@@ -23,5 +25,10 @@
   "homepage": "https://github.com/ChiChou/koa-sqlite3-session#readme",
   "dependencies": {
     "sqlite3": "^3.1.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "istanbul": "^0.4.2",
+    "mocha": "^2.4.5"
   }
 }
