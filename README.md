@@ -10,7 +10,7 @@
 const SQLite3Store = require('koa-sqlite3-session');
 
 app.use(session({
-  store: new SQLite3Store({
+  store: new SQLite3Store('filename.db', {
     // Options specified here
   })
 }));
