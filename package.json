@@ -6,6 +6,7 @@
   "scripts": {
     "test": "_mocha",
     "coverage": "istanbul cover _mocha -- -R spec",
+    "coveralls": "npm run cov -- --report && cat ./coverage/lcov.info | coveralls",
     "cov": "npm run coverage"
   },
   "repository": {
@@ -30,7 +31,9 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "co": "^4.6.0",
+    "coveralls": "^2.11.6",
     "istanbul": "^0.4.2",
-    "mocha": "^2.4.5"
+    "mocha": "^2.4.5",
+    "mocha-lcov-reporter": "^1.0.0"
   }
 }

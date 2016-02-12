@@ -2,3 +2,5 @@ language: node_js
 node_js:
   - "4.1"
 script: npm run cov
+after_success:
+  - npm run coveralls
