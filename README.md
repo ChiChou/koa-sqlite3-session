@@ -24,7 +24,9 @@ see [example](example)
 ## Options
 
 * `verbose`: Enables [node-sqlite3's verbose mode](https://github.com/mapbox/node-sqlite3/wiki/API#sqlite3verbose)
-
+* `ttl`: Default cookie expire time
+* `interval`: Interval for flushing expired sessions
+ 
 ## API
 
 ### module(filename, [options])
@@ -39,15 +41,15 @@ Promise that gets a session by id. Returns parsed JSON if exists, otherwise `nul
 
 Promise that sets a JSON session by id.
 
-### session.destroy(sid)
+### session.end(sid)
 
-Promise that destroys a session by id.
+Promise that ends a session by id.
 
-### session.teardown()
+### session.shutdown()
 
 Promise that closes database connection.
 
-### session.cleanup()
+### session.flush()
 
 Promise that removes all expired session data.
 

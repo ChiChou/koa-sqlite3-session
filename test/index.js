@@ -25,7 +25,7 @@ describe('session storage', function() {
         verbose: true
       });
 
-      yield store.cleanup();
+      yield store.flush();
 
       let sid = Math.random().toString(36).slice(2);
       let data = {
@@ -50,7 +50,7 @@ describe('session storage', function() {
       session = yield store.get('non-exist');
       expect(session).to.be.undefined;
 
-      yield store.teardown();
+      yield store.shutdown();
     }).then(done).catch(console.log);
   });
 
@@ -89,7 +89,7 @@ describe('session storage', function() {
       session = yield store.get(sid);
       expect(session).to.be.undefined;
 
-      yield store.teardown();
+      yield store.shutdown();
     }).then(done).catch(console.log);
   });
 

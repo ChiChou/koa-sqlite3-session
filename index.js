@@ -13,31 +13,8 @@ const SQL_SET = `INSERT OR REPLACE INTO "${TABLE_NAME}" (id, expires, data) VALU
 const SQL_DELETE = `DELETE FROM "${TABLE_NAME}" WHERE id = ?`;
 const SQL_EXPIRE = `DELETE FROM "${TABLE_NAME}" WHERE expires < ?`;
 
-
-/**
- * expire
- * @param  {Session} session koa session
- * @param  {Number}  ttl     time-to-live in seconds
- * @return {Date}            date to expire
- */
-function expireDate(session, ttl) {
-  let expire;
-  if (session && session.cookie && session.cookie.expires) {
-    ttl = 0;
-    expire = session.cookie.expires;
-    if (!(expire instanceof Date)) {
-      expire = new Date(session.cookie.expires);
-    }
-  } else {
-    expire = new Date();
-
-    // half an hour by default
-    if (isNaN(ttl))
-      ttl = 30 * 60;
-
-  }
-  return Math.ceil(expire.getTime() / 1000 + ttl);
-};
+const DEFAULT_TTL = 30 * 60;
+const DEFAULT_INTERVAL = 15 * 60 * 1000;
 
 
 class SQLiteStore {
@@ -48,7 +25,9 @@ class SQLiteStore {
    * @return {Null}
    */
   constructor(filename, opt) {
-    let sqlite = (opt && opt.verbose) ? sqlite3 : sqlite3.verbose();
+    this.opt = opt || {};
+
+    let sqlite = this.opt.verbose ? sqlite3 : sqlite3.verbose();
 
     this.__pending = [];
     this.__ready = false;
@@ -62,12 +41,16 @@ class SQLiteStore {
           this.__pending.forEach(task => {
             this.__db.get(task.sql, task.params, task.callback);
           });
-        }
-      ));
+        }));
 
     });
 
-    setInterval(this.cleanup.bind(this), 15 * 60 * 1000);
+    // method aliases
+    this.end = this.destroy;
+    this.cleanup = this.flush;
+
+    // flush interval
+    setInterval(this.flush.bind(this), this.opt.interval || DEFAULT_INTERVAL);
   }
 
   /**
@@ -95,8 +78,21 @@ class SQLiteStore {
    */
   set(sid, session, ttl) {
     let data = JSON.stringify(session);
-    let expires = expireDate(session, ttl);
-    return this.__query(SQL_SET, [sid, expires, data]);
+    let expire;
+    if (session && session.cookie && session.cookie.expires) {
+      ttl = 0;
+      expire = session.cookie.expires
+      if (!(expire instanceof Date))
+        expire = new Date(session.cookie.expires);
+
+    } else {
+      expire = new Date();
+      if (isNaN(ttl))
+        ttl = this.opt.ttl || DEFAULT_TTL;
+    }
+
+    let expireTime = Math.ceil(expire.getTime() / 1000 + ttl);
+    return this.__query(SQL_SET, [sid, expireTime, data]);
   }
 
   /**
@@ -111,7 +107,7 @@ class SQLiteStore {
    * clean up exired sessions
    * @return {Promise} 
    */
-  cleanup() {
+  flush() {
     let now = Math.floor(new Date().getTime() / 1000);
     return this.__query(SQL_EXPIRE, [now]);
   }
@@ -120,11 +116,11 @@ class SQLiteStore {
    * shutdown sqlite3
    * @return {Null}
    */
-  teardown() {
+  shutdown() {
     let self = this;
-    return new Promise((resolve, reject) => {
-      self.__db.close(err => err ? reject() : resolve());
-    });
+    return new Promise((resolve, reject) =>
+      self.__db.close(err => err ? reject() : resolve())
+    );
   }
 
   /**
@@ -136,9 +132,7 @@ class SQLiteStore {
     return new Promise((resolve, reject) => {
       let done = (err, row) => (err ? reject : resolve)(row);
       if (self.__ready) {
-        self.__db.serialize(() => {
-          self.__db.get(sql, params, done);
-        });
+        self.__db.serialize(() => self.__db.get(sql, params, done));
       } else {
         self.__pending.push({
           sql: sql,
