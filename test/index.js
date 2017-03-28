@@ -17,7 +17,7 @@ function sleep(ms) {
 
 
 describe('session storage', function() {
-  this.timeout(5000);
+  this.timeout(2000);
 
   it('should support regular session operations', done => {
     co(function*() {
@@ -73,7 +73,7 @@ describe('session storage', function() {
 
       data = {
         cookie: {
-          expires: new Date().getTime() + 1000,
+          expires: new Date().getTime() + 500,
           cookie1: 'test',
         },
         key: 'value'
@@ -84,7 +84,7 @@ describe('session storage', function() {
       expect(session).to.deep.equal(data);
 
       // expire
-      yield sleep(1000);
+      yield sleep(500);
 
       session = yield store.get(sid);
       expect(session).to.be.undefined;

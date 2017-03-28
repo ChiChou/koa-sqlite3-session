@@ -59,7 +59,7 @@ class SQLiteStore {
    * @return {Promise} async task
    */
   get(sid) {
-    let now = Math.ceil(new Date().getTime() / 1000);
+    let now = new Date().getTime();
 
     return this.__query(SQL_GET, [sid]).then(result => {
       if (result && result.expires > now)
@@ -74,7 +74,7 @@ class SQLiteStore {
    * session start
    * @param {String} sid     session id
    * @param {Object} session session data
-   * @param {Number} ttl     time-to-live in seconds
+   * @param {Number} ttl     time-to-live in millseconds
    */
   set(sid, session, ttl) {
     let data = JSON.stringify(session);
@@ -91,7 +91,7 @@ class SQLiteStore {
         ttl = this.opt.ttl || DEFAULT_TTL;
     }
 
-    let expireTime = Math.ceil(expire.getTime() / 1000 + ttl);
+    let expireTime = expire.getTime() + ttl;
     return this.__query(SQL_SET, [sid, expireTime, data]);
   }
 
@@ -108,7 +108,7 @@ class SQLiteStore {
    * @return {Promise} 
    */
   flush() {
-    let now = Math.floor(new Date().getTime() / 1000);
+    let now = Math.floor(new Date().getTime());
     return this.__query(SQL_EXPIRE, [now]);
   }
 

@@ -24,7 +24,7 @@ see [example](example)
 ## Options
 
 * `verbose`: Enables [node-sqlite3's verbose mode](https://github.com/mapbox/node-sqlite3/wiki/API#sqlite3verbose)
-* `ttl`: Default cookie expire time
+* `ttl`: Default cookie expire time, in seconds
 * `interval`: Interval for flushing expired sessions
  
 ## API
