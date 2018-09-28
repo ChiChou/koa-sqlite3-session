@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-  - "4.1"
+  - "6.5"
 script: npm run cov
 after_success:
   - npm run coveralls
