@@ -29,21 +29,9 @@ class SQLiteStore {
 
     let sqlite = this.opt.verbose ? sqlite3 : sqlite3.verbose();
 
-    this.__pending = [];
-    this.__ready = false;
-    this.__db = new sqlite.Database(filename, err => {
-      if (err) throw err;
-
-      this.__db.serialize(() =>
-        this.__db.exec(SQL_CREATE_TABLE, err => {
-          if (err) throw err;
-          this.__ready = true;
-          this.__pending.forEach(task => {
-            this.__db.get(task.sql, task.params, task.callback);
-          });
-        }));
-
-    });
+    this.__db = new sqlite.Database(filename);
+    this.__db.serialize(() =>
+      this.__db.exec(SQL_CREATE_TABLE));
 
     // method aliases
     this.end = this.destroy;
@@ -114,12 +102,11 @@ class SQLiteStore {
 
   /**
    * shutdown sqlite3
-   * @return {Null}
+   * @return {Promise<Null>}
    */
   shutdown() {
-    let self = this;
     return new Promise((resolve, reject) =>
-      self.__db.close(err => err ? reject() : resolve())
+      this.__db.close(err => err ? reject(err) : resolve())
     );
   }
 
@@ -128,19 +115,9 @@ class SQLiteStore {
    * @return {Promise} query task
    */
   __query(sql, params) {
-    const self = this;
     return new Promise((resolve, reject) => {
-      let done = (err, row) => (err ? reject : resolve)(row);
-      if (self.__ready) {
-        self.__db.serialize(() => self.__db.get(sql, params, done));
-      } else {
-        self.__pending.push({
-          sql: sql,
-          params: params,
-          callback: done
-        });
-      }
-
+      let callback = (err, row) => err ? reject(err) : resolve(row);
+      this.__db.serialize(() => this.__db.get(sql, params, callback));
     });
   }
 }

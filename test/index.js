@@ -1,101 +1,89 @@
 'use strict';
 
 const chai = require('chai');
-const expect = chai.expect;
-const co = require('co');
+const chaiAsPromised = require('chai-as-promised');
+const SQLiteStore = require('../');
 
+chai.use(chaiAsPromised);
 chai.config.includeStack = true;
 
-const SQLiteStore = require('../');
+const expect = chai.expect;
 
 
 function sleep(ms) {
-  return function(cb) {
-    setTimeout(cb, ms);
-  };
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+describe('session storage', function () {
+  it('should support regular session operations', async () => {
+    const store = new SQLiteStore(':memory:', {
+      verbose: true
+    });
 
-describe('session storage', function() {
-  this.timeout(2000);
+    await store.flush();
 
-  it('should support regular session operations', done => {
-    co(function*() {
-      let store = new SQLiteStore(':memory:', {
-        verbose: true
-      });
+    let sid = Math.random().toString(36).slice(2);
+    let data = {
+      user: 'John Smith',
+      age: 23
+    };
 
-      yield store.flush();
+    await store.set(sid, data);
+    let session = await store.get(sid);
+    expect(session).to.deep.equal(data);
 
-      let sid = Math.random().toString(36).slice(2);
-      let data = {
-        user: 'John Smith',
-        age: 23
-      };
+    data.age++;
 
-      yield store.set(sid, data);
-      let session = yield store.get(sid);
-      expect(session).to.deep.equal(data);
+    await store.set(sid, data);
+    session = await store.get(sid);
+    expect(session).to.deep.equal(data);
 
-      data.age++;
+    await store.destroy(sid);
+    session = await store.get(sid);
+    expect(session).to.be.undefined;
 
-      yield store.set(sid, data);
-      session = yield store.get(sid);
-      expect(session).to.deep.equal(data);
+    session = await store.get('non-exist');
+    expect(session).to.be.undefined;
 
-      yield store.destroy(sid);
-      session = yield store.get(sid);
-      expect(session).to.be.undefined;
-
-      session = yield store.get('non-exist');
-      expect(session).to.be.undefined;
-
-      yield store.shutdown();
-    }).then(done).catch(console.log);
+    await store.shutdown();
   });
 
-  it('should remove expired cookies', done => {
-    co(function*() {
-      let store = new SQLiteStore(':memory:');
+  it('should clear expired cookies', async () => {
+    let store = new SQLiteStore(':memory:');
 
-      let sid = 'test-sid';
-      let data = {
-        cookie: {
-          expires: new Date(1970, 1, 1),
-          cookie1: 'test'
-        },
-        key: 'value'
-      };
-      yield store.set(sid, data);
+    let sid = 'test-sid';
+    let data = {
+      cookie: {
+        expires: new Date(1970, 1, 1),
+        cookie1: 'test'
+      },
+      key: 'value'
+    };
+    await store.set(sid, data);
+    let session = await store.get(sid);
+    expect(session).to.be.undefined;
 
-      let session = yield store.get(sid);
-      expect(session).to.be.undefined;
+    const timeout = 100;
 
-      data = {
-        cookie: {
-          expires: new Date().getTime() + 500,
-          cookie1: 'test',
-        },
-        key: 'value'
-      }
+    data = {
+      cookie: {
+        expires: new Date().getTime() + timeout,
+        cookie1: 'test',
+      },
+      key: 'value'
+    }
 
-      yield store.set(sid, data, 1);
-      session = yield store.get(sid);
-      expect(session).to.deep.equal(data);
+    await store.set(sid, data, 1);
+    session = await store.get(sid);
+    expect(session).to.deep.equal(data);
 
-      // expire
-      yield sleep(500);
+    // expire
+    await sleep(timeout);
 
-      session = yield store.get(sid);
-      expect(session).to.be.undefined;
+    session = await store.get(sid);
+    expect(session).to.be.undefined;
 
-      yield store.shutdown();
-    }).then(done).catch(console.log);
-  });
-
-  it('should reject invalid filename', done => {
-    let store = new SQLiteStore('/path/not/exist');
-    done();
+    await store.shutdown();
   });
 
 });

@@ -4,8 +4,8 @@
   "description": "sqlite3 adaption for koa-generic-session",
   "main": "index.js",
   "scripts": {
-    "test": "_mocha",
-    "coverage": "istanbul cover _mocha -- -R spec",
+    "test": "_mocha --exit",
+    "coverage": "istanbul cover _mocha -- -R spec --exit",
     "coveralls": "npm run cov -- --report && cat ./coverage/lcov.info | coveralls",
     "cov": "npm run coverage"
   },
@@ -26,14 +26,14 @@
   "readme": "README.md",
   "homepage": "https://github.com/ChiChou/koa-sqlite3-session#readme",
   "dependencies": {
-    "sqlite3": "^4.0.2"
+    "sqlite3": "^5.0.2"
   },
   "devDependencies": {
-    "chai": "^4.0.2",
-    "co": "^4.6.0",
-    "coveralls": "^2.11.6",
-    "istanbul": "^0.4.2",
-    "mocha": "^3.4.2",
-    "mocha-lcov-reporter": "^1.0.0"
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.1.1",
+    "istanbul": "^0.4.5",
+    "mocha": "^9.1.2",
+    "mocha-lcov-reporter": "^1.3.0"
   }
 }
