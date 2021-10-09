@@ -3,6 +3,8 @@ on:
     tags:
       - '*'
 
+name: Publish to npm
+
 jobs:
   publish:
     runs-on: ubuntu-latest
