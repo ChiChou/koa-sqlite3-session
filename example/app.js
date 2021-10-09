@@ -2,46 +2,46 @@
  * from https://github.com/koajs/generic-session/blob/master/example/app.js
  */ 
 
-var session = require('koa-generic-session');
-var SQLiteStore = require('..');
-var koa = require('koa');
+const session = require('koa-generic-session');
+const SQLiteStore = require('..');
+const Koa = require('koa');
 
-var app = koa();
+const app = new Koa();
 app.keys = ['keys', 'keykeys'];
 app.use(session({
   store: new SQLiteStore('sqlite.db')
 }));
 
-app.use(function *() {
-  switch (this.path) {
+app.use(async (ctx) => {
+  switch (ctx.path) {
   case '/get':
-    get.call(this);
+    get(ctx);
     break;
   case '/remove':
-    remove.call(this);
+    remove(ctx);
     break;
   case '/regenerate':
-    yield regenerate.call(this);
+    await regenerate(ctx);
     break;
   }
 });
 
-function get() {
-  var session = this.session;
+function get(ctx) {
+  const { session } = ctx
   session.count = session.count || 0;
   session.count++;
-  this.body = session.count;
+  ctx.body = session.count;
 }
 
-function remove() {
-  this.session = null;
-  this.body = 0;
+function remove(ctx) {
+  ctx.session = null;
+  ctx.body = 0;
 }
 
-function *regenerate() {
-  get.call(this);
-  yield this.regenerateSession();
-  get.call(this);
+async function regenerate(ctx) {
+  get(ctx);
+  await ctx.regenerateSession();
+  get(ctx);
 }
 
 app.listen(8080);
